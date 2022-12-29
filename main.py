@@ -23,7 +23,7 @@ def admin_only(f):
     return decorated_function
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = os.environ.get("APP_SECRET_KEY")
+app.config['SECRET_KEY'] = os.getenv("APP_SECRET_KEY")
 ckeditor = CKEditor(app)
 Bootstrap(app)
 
