@@ -1,4 +1,4 @@
-from flask import Flask, render_template, redirect, url_for, flash, abort
+from flask import Flask, render_template, redirect, url_for, flash, abort, request
 from functools import wraps
 from flask_bootstrap import Bootstrap
 from flask_ckeditor import CKEditor
@@ -7,10 +7,13 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import relationship
 from flask_login import UserMixin, login_user, LoginManager, login_required, current_user, logout_user
-from forms import CreatePostForm, RegisterForm, LoginForm, CommentForm
+from forms import CreatePostForm, RegisterForm, LoginForm, CommentForm, SendMessage
 from flask_gravatar import Gravatar
+import smtplib
 import os
 
+my_email = os.getenv("EMAIL")
+my_password = os.getenv("PASSWORD")
 
 def admin_only(f):
     @wraps(f)
@@ -159,9 +162,32 @@ def about():
     return render_template("about.html")
 
 
-@app.route("/contact")
+@app.route("/contact", methods=["GET", "POST"])
 def contact():
-    return render_template("contact.html")
+    send_form = SendMessage()
+    if send_form.validate_on_submit():
+        name = send_form.name.data
+        email = send_form.email.data
+        if send_form.number.data == '':
+            phone = 'No data input'
+        else:
+            phone = send_form.number.data
+        message = send_form.message.data
+        with smtplib.SMTP("smtp.gmail.com", 587) as connection:
+            connection.starttls()
+            connection.login(user=my_email, password=my_password)
+            connection.sendmail(
+                from_addr=my_email,
+                to_addrs=my_email,
+                msg=f"Subject:Msg From Blog\n"
+                    f"\nName: {name}"
+                    f"\nEmail: {email}"
+                    f"\nPhone: {phone}"
+                    f"\nMessage: {message}"
+            )
+        flash('Your message has been successfully sent.')
+        return redirect(url_for('contact'))
+    return render_template("contact.html", form=send_form)
 
 
 @app.route("/new-post", methods=["GET", "POST"])
