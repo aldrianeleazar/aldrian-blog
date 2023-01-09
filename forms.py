@@ -34,6 +34,6 @@ class CommentForm(FlaskForm):
 class SendMessage(FlaskForm):
     name = StringField("", validators=[DataRequired()], render_kw={"placeholder": "Name"})
     email = StringField("", validators=[DataRequired(), Email()], render_kw={"placeholder": "Email"})
-    number = StringField("", render_kw={"placeholder": "Phone Number"})
+    number = StringField("", render_kw={"placeholder": "Phone Number(Optional)"})
     message = TextAreaField("", validators=[DataRequired()], render_kw={"placeholder": "Message"})
     send = SubmitField("Send")
