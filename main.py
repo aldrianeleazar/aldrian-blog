@@ -1,4 +1,4 @@
-from flask import Flask, render_template, redirect, url_for, flash, abort, request
+from flask import Flask, render_template, redirect, url_for, flash, abort, request, jsonify
 from functools import wraps
 from flask_bootstrap import Bootstrap
 from flask_ckeditor import CKEditor
@@ -6,7 +6,7 @@ from datetime import date
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import relationship
-from flask_login import UserMixin, login_user, LoginManager, login_required, current_user, logout_user
+from flask_login import UserMixin, login_user, LoginManager, current_user, logout_user
 from forms import CreatePostForm, RegisterForm, LoginForm, CommentForm, SendMessage
 from flask_gravatar import Gravatar
 import smtplib
@@ -56,6 +56,9 @@ class User(UserMixin, db.Model):
     posts = relationship("BlogPost", back_populates="author")
     comments = relationship("Comment", back_populates="comment_author")
 
+    def to_dict(self):
+        return {column.name: getattr(self, column.name) for column in self.__table__.columns}
+
 
 class BlogPost(db.Model):
     __tablename__ = "blog_posts"
@@ -69,6 +72,9 @@ class BlogPost(db.Model):
     img_url = db.Column(db.String(250), nullable=False)
     blog_comments = relationship("Comment", back_populates="parent_post")
 
+    def to_dict(self):
+        return {column.name: getattr(self, column.name) for column in self.__table__.columns}
+
 
 class Comment(db.Model):
     __tablename__ = "comments"
@@ -79,6 +85,9 @@ class Comment(db.Model):
     parent_post = relationship("BlogPost", back_populates="blog_comments")
     text = db.Column(db.Text, nullable=False)
 
+    def to_dict(self):
+        return {column.name: getattr(self, column.name) for column in self.__table__.columns}
+
 # db.create_all()
 
 
@@ -86,6 +95,36 @@ class Comment(db.Model):
 def get_all_posts():
     posts = BlogPost.query.all()
     return render_template("index.html", all_posts=posts)
+
+
+@app.route("/all_user")
+def get_all_user():
+    api_key_auth = request.args.get("guest-api-key")
+    users = User.query.all()
+    if api_key_auth == "Admin_api_key_only":
+        return jsonify(users=[user.to_dict() for user in users]), 200
+    else:
+        return jsonify(response={"error": "Sorry, only admins can access this. Make sure you have the correct admin api_key"}), 403
+
+
+@app.route("/all_post")
+def get_all_post():
+    api_key_auth = request.args.get("guest-api-key")
+    posts = BlogPost.query.all()
+    if api_key_auth == "Admin_api_key_only":
+        return jsonify(posts=[post.to_dict() for post in posts]), 200
+    else:
+        return jsonify(response={"error": "Sorry, only admins can access this. Make sure you have the correct admin api_key"}), 403
+
+
+@app.route("/all_comment")
+def get_all_comment():
+    api_key_auth = request.args.get("guest-api-key")
+    comments = Comment.query.all()
+    if api_key_auth == "Admin_api_key_only":
+        return jsonify(comments=[comment.to_dict() for comment in comments]), 200
+    else:
+        return jsonify(response={"error": "Sorry, only admins can access this. Make sure you have the correct admin api_key"}), 403
 
 
 @app.route('/register', methods=["GET", "POST"])
