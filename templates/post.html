@@ -34,7 +34,7 @@
 
 
 <!--      Comments Area -->
-          {{ ckeditor.load() }}
+          {{ ckeditor.load(pkg_type="basic") }}
           {{ ckeditor.config(name='comment') }}
           {{ wtf.quick_form(form, novalidate=True, button_map={"submit_comment": "primary"}) }}
           <div class="col-lg-8 col-md-10 mx-auto comment">
