@@ -6,8 +6,8 @@ from datetime import date
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import relationship
-from flask_login import UserMixin, login_user, LoginManager, current_user, logout_user
-from forms import CreatePostForm, RegisterForm, LoginForm, CommentForm, SendMessage
+from flask_login import UserMixin, login_user, LoginManager, current_user, logout_user, login_required
+from forms import CreatePostForm, RegisterForm, LoginForm, CommentForm, EditCommentForm, SendMessage
 from flask_gravatar import Gravatar
 import smtplib
 import os
@@ -248,7 +248,7 @@ def add_new_post():
     return render_template("make-post.html", form=form)
 
 
-@app.route("/edit-post/<int:post_id>")
+@app.route("/edit-post/<int:post_id>", methods=["GET", "POST"])
 @admin_only
 def edit_post(post_id):
     post = BlogPost.query.get(post_id)
@@ -256,19 +256,17 @@ def edit_post(post_id):
         title=post.title,
         subtitle=post.subtitle,
         img_url=post.img_url,
-        author=post.author,
         body=post.body
     )
     if edit_form.validate_on_submit():
         post.title = edit_form.title.data
         post.subtitle = edit_form.subtitle.data
         post.img_url = edit_form.img_url.data
-        post.author = edit_form.author.data
         post.body = edit_form.body.data
         db.session.commit()
         return redirect(url_for("show_post", post_id=post.id))
 
-    return render_template("make-post.html", form=edit_form)
+    return render_template("make-post.html", form=edit_form, is_edit=True)
 
 
 @app.route("/delete/<int:post_id>")
@@ -279,6 +277,33 @@ def delete_post(post_id):
     db.session.commit()
     return redirect(url_for('get_all_posts'))
 
+
+@app.route("/edit_comment", methods=["GET", "POST"])
+@login_required
+def edit_your_comment():
+    post_id = request.args.get("post_id")
+    requested_post = BlogPost.query.get(post_id)
+    comment_id = request.args.get("comment_id")
+    comment = Comment.query.get(comment_id)
+    edit_form = EditCommentForm(
+        edit_comment=comment.text
+    )
+    if edit_form.validate_on_submit():
+        comment.text = edit_form.edit_comment.data
+        db.session.commit()
+        return redirect(url_for("show_post", post_id=post_id))
+    return render_template("edit-comment.html", post=requested_post, com_id=int(comment_id), form=edit_form)
+
+
+@app.route("/delete_comment", methods=["GET", "POST"])
+@login_required
+def delete_your_comment():
+    post_id = request.args.get("post_id")
+    comment_id = request.args.get("comment_id")
+    delete_comment = Comment.query.get(comment_id)
+    db.session.delete(delete_comment)
+    db.session.commit()
+    return redirect(url_for("show_post", post_id=post_id))
 
 if __name__ == "__main__":
     app.run(host='192.168.254.126', port=5000, debug=True)

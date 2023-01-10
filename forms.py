@@ -31,6 +31,11 @@ class CommentForm(FlaskForm):
     submit_comment = SubmitField("SUBMIT COMMENT")
 
 
+class EditCommentForm(FlaskForm):
+    edit_comment = CKEditorField("Edit your comment", validators=[DataRequired()])
+    submit = SubmitField("EDIT COMMENT")
+
+
 class SendMessage(FlaskForm):
     name = StringField("", validators=[DataRequired()], render_kw={"placeholder": "Name"})
     email = StringField("", validators=[DataRequired(), Email()], render_kw={"placeholder": "Email"})
